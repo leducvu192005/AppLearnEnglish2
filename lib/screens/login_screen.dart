@@ -1,23 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../admin/admin_screen.dart';
+import '../user/user_screen.dart';
+import 'register_screen.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const LoginScreen(),
-    );
-  }
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class _LoginScreenState extends State<LoginScreen> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  // 👉 Hàm xử lý đăng nhập
+  Future<void> _login() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng nhập email và mật khẩu")),
+      );
+      return;
+    }
+
+    try {
+      setState(() => _isLoading = true);
+
+      // Đăng nhập với Firebase Auth
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      // Lấy thông tin người dùng từ Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        throw Exception("Không tìm thấy thông tin người dùng trong Firestore");
+      }
+
+      final role = userDoc.data()?['role'] ?? 'user';
+
+      // Chuyển sang màn hình phù hợp
+      if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const UserScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = "Lỗi đăng nhập: ${e.message}";
+      if (e.code == 'user-not-found') {
+        message = "Không tìm thấy tài khoản với email này.";
+      } else if (e.code == 'wrong-password') {
+        message = "Sai mật khẩu. Vui lòng thử lại.";
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Đăng nhập thất bại: $e")));
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,68 +109,86 @@ class LoginScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    // Email field
                     TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.email),
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.email),
                         labelText: "Email",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        border: OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
+
+                    // Password field
                     TextField(
-                      obscureText: true,
+                      controller: passwordController,
+                      obscureText: _obscurePassword,
+                      onSubmitted: (_) => _login(), // Nhấn Enter để login
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.lock),
                         labelText: "Password",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                           ),
-                        ),
-                        onPressed: () {
-                          // Xử lý login ở đây
-                        },
-                        child: const Text(
-                          "Login",
-                          style: TextStyle(fontSize: 16),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text("Don’t have an account? "),
-                        GestureDetector(
-                          onTap: () {
-                            // Chuyển sang trang đăng ký
-                          },
-                          child: const Text(
-                            "Register",
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
+
+                    const SizedBox(height: 24),
+
+                    // Nút login
+                    _isLoading
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
+                            onPressed: _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              minimumSize: const Size.fromHeight(50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              "Login",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+
+                    const SizedBox(height: 12),
+
+                    // Chuyển sang đăng ký
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Don’t have an account? Register",
+                        style: TextStyle(color: Colors.black54),
+                      ),
                     ),
                   ],
                 ),
