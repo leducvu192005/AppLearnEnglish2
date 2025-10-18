@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/screens/home_screen.dart';
 
 class UserScreen extends StatelessWidget {
   const UserScreen({super.key});
@@ -18,37 +19,46 @@ class UserScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
+      body: Column(
         children: [
+          const SizedBox(height: 20),
           const Text(
-            'Xin chào, học viên!',
+            'Chào mừng bạn đến với ứng dụng học tiếng Anh!',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.book_online),
-              title: const Text('Học từ vựng'),
-              subtitle: const Text('Ôn luyện từ mới mỗi ngày'),
-              onTap: () {},
-            ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.book),
+            label: const Text('Bắt đầu học'),
+            onPressed: () {
+              // Thêm chức năng học ở đây
+            },
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.mic),
-              title: const Text('Luyện nghe nói'),
-              subtitle: const Text('Cải thiện phát âm của bạn'),
-              onTap: () {},
-            ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.quiz),
+            label: const Text('Làm bài kiểm tra'),
+            onPressed: () {
+              // Thêm chức năng làm bài kiểm tra ở đây
+            },
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.quiz),
-              title: const Text('Làm bài kiểm tra'),
-              subtitle: const Text('Đánh giá kỹ năng hiện tại'),
-              onTap: () {},
-            ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.leaderboard),
+            label: const Text('Xem bảng xếp hạng'),
+            onPressed: () {
+              // Thêm chức năng xem bảng xếp hạng ở đây
+            },
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            },
+            child: const Text('Đến trang chủ '),
           ),
         ],
       ),

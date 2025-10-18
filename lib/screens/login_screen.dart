@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_1/screens/layouts_main.dart';
 import '../admin/admin_screen.dart';
-import '../user/user_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const UserScreen()),
+          MaterialPageRoute(builder: (_) => const LayoutsMain()),
         );
       }
     } on FirebaseAuthException catch (e) {

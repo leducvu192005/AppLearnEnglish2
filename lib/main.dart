@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/register_screen.dart'; // 👈 thêm import màn hình đăng ký
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'admin/admin_screen.dart';
-import 'user/user_screen.dart';
+import 'config/firebase_options.dart';
+import 'core/route/app_route.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // cần thiết khi gọi async trong main
@@ -23,14 +19,7 @@ class EnglishApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) =>
-            const RegisterScreen(), // 👈 thêm route đăng ký
-        '/home': (context) => const HomeScreen(),
-        '/admin': (context) => const AdminScreen(), // route cho admin
-        '/user': (context) => const UserScreen(), // route cho người dùng
-      },
+      routes: AppRoute.routes,
     );
   }
 }
