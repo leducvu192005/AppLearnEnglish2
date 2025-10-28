@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_1/screens/layouts_admin.dart';
 import 'package:flutter_application_1/screens/layouts_main.dart';
 import '../admin/admin_screen.dart';
 import 'register_screen.dart';
@@ -53,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (role == 'admin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const AdminScreen()),
+          MaterialPageRoute(builder: (_) => const LayoutsAdmin()),
         );
       } else {
         Navigator.pushReplacement(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:convert';
 
 class VocabularyPage extends StatefulWidget {
   const VocabularyPage({super.key});
@@ -12,7 +11,7 @@ class VocabularyPage extends StatefulWidget {
 class _VocabularyPageState extends State<VocabularyPage> {
   List<String> recentWords = [];
   final userId =
-      "demoUser"; // 🔹 sau này thay bằng FirebaseAuth.instance.currentUser!.uid
+      "demoUser"; // 🔹 thay bằng FirebaseAuth.instance.currentUser!.uid khi có auth
 
   @override
   void initState() {
@@ -20,12 +19,86 @@ class _VocabularyPageState extends State<VocabularyPage> {
     _loadRecentWords();
   }
 
-  Future<void> _loadRecentWords() async {
+  void _loadRecentWords() {
     setState(() {
       recentWords = ["apple", "journey", "computer"];
     });
   }
 
+  // ------------------------------------------------
+  // 🔍 Hàm tìm kiếm từ vựng toàn Firestore
+  // ------------------------------------------------
+  Future<void> _searchWord(String query) async {
+    if (query.trim().isEmpty) return;
+
+    final defaultTopicsRef = FirebaseFirestore.instance.collection(
+      'Vocabulary_topics',
+    );
+    final userTopicsRef = FirebaseFirestore.instance
+        .collection('user_vocabularies')
+        .doc(userId)
+        .collection('topics');
+
+    final defaultSnapshot = await defaultTopicsRef.get();
+    final userSnapshot = await userTopicsRef.get();
+
+    String? foundMeaning;
+
+    // 🔹 Hàm tìm kiếm trong danh sách topic
+    String? searchInTopics(List<QueryDocumentSnapshot> docs) {
+      for (var doc in docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final words = data['words'];
+        if (words == null) continue;
+
+        // Duyệt từng từ
+        if (words is Map) {
+          for (var w in words.values) {
+            if (w is Map) {
+              final en = (w['en'] ?? '').toString().toLowerCase();
+              final vi = (w['vi'] ?? '').toString();
+              if (en == query.toLowerCase()) return vi;
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    foundMeaning =
+        searchInTopics(defaultSnapshot.docs) ??
+        searchInTopics(userSnapshot.docs);
+
+    setState(() {
+      if (!recentWords.contains(query)) {
+        recentWords.insert(0, query);
+      }
+    });
+
+    // 🔹 Hiển thị kết quả
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text("Kết quả cho '$query'"),
+        content: Text(
+          foundMeaning != null
+              ? "Nghĩa: $foundMeaning"
+              : "Không tìm thấy từ này trong cơ sở dữ liệu.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------
+  // 🔹 Tạo topic mới
+  // ------------------------------------------------
   Future<void> _createNewTopic() async {
     final TextEditingController nameController = TextEditingController();
     final CollectionReference userTopicsRef = FirebaseFirestore.instance
@@ -36,17 +109,17 @@ class _VocabularyPageState extends State<VocabularyPage> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Create New Vocabulary Set"),
+        title: const Text("Tạo bộ từ mới"),
         content: TextField(
           controller: nameController,
           decoration: const InputDecoration(
-            hintText: "Enter topic name (e.g. Travel)",
+            hintText: "Tên topic (e.g. Travel)",
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: const Text("Hủy"),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -55,19 +128,21 @@ class _VocabularyPageState extends State<VocabularyPage> {
                 await userTopicsRef.add({
                   'name': name,
                   'progress': 0.0,
-                  'words': {}, // ✅ lưu map rỗng thay vì list
+                  'words': {},
                 });
               }
-              // ignore: use_build_context_synchronously
-              Navigator.pop(context);
+              if (context.mounted) Navigator.pop(context);
             },
-            child: const Text("Create"),
+            child: const Text("Tạo"),
           ),
         ],
       ),
     );
   }
 
+  // ------------------------------------------------
+  // 🔹 Giao diện chính
+  // ------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final CollectionReference defaultTopicsRef = FirebaseFirestore.instance
@@ -82,15 +157,11 @@ class _VocabularyPageState extends State<VocabularyPage> {
         title: const Text("Vocabulary"),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: "Create your own vocabulary set",
-            onPressed: _createNewTopic,
-          ),
+          IconButton(icon: const Icon(Icons.add), onPressed: _createNewTopic),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
             // 🔍 Search bar
@@ -102,109 +173,27 @@ class _VocabularyPageState extends State<VocabularyPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onSubmitted: (value) async {
-                if (value.isEmpty) return;
-
-                // 🔹 Lưu lịch sử tìm kiếm
-                setState(() {
-                  if (!recentWords.contains(value)) {
-                    recentWords.insert(0, value);
-                  }
-                });
-
-                // 🔹 Lấy dữ liệu từ Firestore
-                final defaultSnapshot = await defaultTopicsRef.get();
-                final userSnapshot = await userTopicsRef.get();
-
-                String? foundMeaning;
-
-                // Hàm tìm kiếm
-                String? searchInTopics(List<QueryDocumentSnapshot> docs) {
-                  for (var doc in docs) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final words = data['words'];
-                    if (words == null) continue;
-
-                    if (words is Map) {
-                      for (var w in words.values) {
-                        if (w is Map) {
-                          // Kiểu {'en': 'apple', 'vi': 'quả táo'}
-                          if ((w['en']?.toString().toLowerCase() ?? '') ==
-                              value.toLowerCase()) {
-                            return w['vi']?.toString();
-                          }
-                        } else if (w is Map<String, dynamic> == false) {
-                          // Kiểu {'Dog': 'Con chó'}
-                          final wordMap = w as Map;
-                          for (var entry in wordMap.entries) {
-                            if (entry.key.toString().toLowerCase() ==
-                                value.toLowerCase()) {
-                              return entry.value.toString();
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                  return null;
-                }
-
-                foundMeaning =
-                    searchInTopics(defaultSnapshot.docs) ??
-                    searchInTopics(userSnapshot.docs);
-
-                // 🔹 Hiển thị kết quả
-                if (foundMeaning != null) {
-                  // ignore: use_build_context_synchronously
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: Text("Nghĩa của '$value'"),
-                      content: Text(foundMeaning!),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("OK"),
-                        ),
-                      ],
-                    ),
-                  );
-                } else {
-                  // ignore: use_build_context_synchronously
-                  showDialog(
-                    context: context,
-                    builder: (_) => const AlertDialog(
-                      title: Text("Không tìm thấy"),
-                      content: Text("Từ này chưa có trong bộ từ vựng."),
-                    ),
-                  );
-                }
-              },
+              onSubmitted: _searchWord,
             ),
-
             const SizedBox(height: 24),
 
-            // 🕓 Recent Searches
+            // 🕓 Recent searches
             if (recentWords.isNotEmpty) ...[
               const Text(
                 "Recent Searches",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                height: 50,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: recentWords.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 10),
-                  itemBuilder: (context, index) {
-                    return Chip(
-                      label: Text(recentWords[index]),
-                      backgroundColor: Colors.blue.shade100,
-                    );
-                  },
-                ),
+              Wrap(
+                spacing: 8,
+                children: recentWords
+                    .map(
+                      (word) => Chip(
+                        label: Text(word),
+                        backgroundColor: Colors.blue.shade100,
+                      ),
+                    )
+                    .toList(),
               ),
               const SizedBox(height: 24),
             ],
@@ -215,30 +204,22 @@ class _VocabularyPageState extends State<VocabularyPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-
             StreamBuilder<QuerySnapshot>(
               stream: userTopicsRef.snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final userTopics = snapshot.data!.docs;
-
-                if (userTopics.isEmpty) {
-                  return const Text("You haven't created any custom sets yet.");
-                }
-
+                if (!snapshot.hasData) return const CircularProgressIndicator();
+                final topics = snapshot.data!.docs;
+                if (topics.isEmpty) return const Text("No custom sets yet.");
                 return Column(
-                  children: userTopics.map((topic) {
-                    final data = topic.data() as Map<String, dynamic>;
-                    final name = data['name'] ?? "Unnamed";
+                  children: topics.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final name = data['name'] ?? 'Unnamed';
                     final progress = (data['progress'] ?? 0.0) * 100;
-
                     return Card(
                       child: ListTile(
                         title: Text(name),
                         subtitle: LinearProgressIndicator(
-                          value: (data['progress'] ?? 0.0),
+                          value: data['progress'] ?? 0.0,
                           minHeight: 6,
                           backgroundColor: Colors.grey[300],
                           color: Colors.blue,
@@ -248,7 +229,7 @@ class _VocabularyPageState extends State<VocabularyPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => TopicDetailPage(topic: topic),
+                              builder: (_) => TopicDetailPage(topicDoc: doc),
                             ),
                           );
                         },
@@ -258,7 +239,6 @@ class _VocabularyPageState extends State<VocabularyPage> {
                 );
               },
             ),
-
             const SizedBox(height: 24),
 
             // 📚 Default topics
@@ -267,17 +247,10 @@ class _VocabularyPageState extends State<VocabularyPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-
             StreamBuilder<QuerySnapshot>(
               stream: defaultTopicsRef.snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Text("No topics found");
-                }
-
+                if (!snapshot.hasData) return const CircularProgressIndicator();
                 final topics = snapshot.data!.docs;
                 return GridView.builder(
                   shrinkWrap: true,
@@ -285,22 +258,20 @@ class _VocabularyPageState extends State<VocabularyPage> {
                   itemCount: topics.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 1.2,
-                    crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.2,
                   ),
                   itemBuilder: (context, index) {
-                    final topic = topics[index];
-                    final topicData =
-                        topic.data() as Map<String, dynamic>? ?? {};
-                    final topicName = topicData['name'] ?? topic.id;
-
+                    final doc = topics[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final name = data['name'] ?? doc.id;
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => TopicDetailPage(topic: topic),
+                            builder: (_) => TopicDetailPage(topicDoc: doc),
                           ),
                         );
                       },
@@ -311,7 +282,7 @@ class _VocabularyPageState extends State<VocabularyPage> {
                         elevation: 3,
                         child: Center(
                           child: Text(
-                            topicName,
+                            name,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
@@ -332,12 +303,12 @@ class _VocabularyPageState extends State<VocabularyPage> {
   }
 }
 
-// ===============================
-// 🔹 Trang chi tiết Topic
-// ===============================
+// =====================================================
+// 🔹 Trang chi tiết topic: xem danh sách từ + thêm từ
+// =====================================================
 class TopicDetailPage extends StatefulWidget {
-  final QueryDocumentSnapshot topic;
-  const TopicDetailPage({super.key, required this.topic});
+  final QueryDocumentSnapshot topicDoc;
+  const TopicDetailPage({super.key, required this.topicDoc});
 
   @override
   State<TopicDetailPage> createState() => _TopicDetailPageState();
@@ -345,27 +316,36 @@ class TopicDetailPage extends StatefulWidget {
 
 class _TopicDetailPageState extends State<TopicDetailPage> {
   late Map<String, dynamic> wordsMap;
-  late String topicId;
-  late String topicName;
   late DocumentReference topicRef;
+  late String topicName;
 
   @override
   void initState() {
     super.initState();
-    final topicData = widget.topic.data() as Map<String, dynamic>;
-    topicName = topicData['name'] ?? widget.topic.id;
-    topicId = widget.topic.id;
-    topicRef = widget.topic.reference;
-    wordsMap = Map<String, dynamic>.from(topicData['words'] ?? {});
+    final data = widget.topicDoc.data() as Map<String, dynamic>;
+    topicName = data['name'] ?? widget.topicDoc.id;
+    topicRef = widget.topicDoc.reference;
+    final rawWords = data['words'];
+    if (rawWords is List) {
+      // Nếu là List, chuyển thành Map
+      wordsMap = {
+        for (int i = 0; i < rawWords.length; i++)
+          'w${i + 1}': rawWords[i] as Map<String, dynamic>,
+      };
+    } else if (rawWords is Map) {
+      wordsMap = Map<String, dynamic>.from(rawWords);
+    } else {
+      wordsMap = {};
+    }
   }
 
-  Future<void> _addNewWord() async {
-    final TextEditingController enController = TextEditingController();
-    final TextEditingController viController = TextEditingController();
+  Future<void> _addWord() async {
+    final enController = TextEditingController();
+    final viController = TextEditingController();
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text("Add New Word"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -390,20 +370,18 @@ class _TopicDetailPageState extends State<TopicDetailPage> {
               final en = enController.text.trim();
               final vi = viController.text.trim();
               if (en.isNotEmpty && vi.isNotEmpty) {
-                final newKey = DateTime.now().millisecondsSinceEpoch.toString();
-                wordsMap[newKey] = {'en': en, 'vi': vi};
+                final id = DateTime.now().millisecondsSinceEpoch.toString();
+                wordsMap[id] = {'en': en, 'vi': vi};
                 await topicRef.update({'words': wordsMap});
+                setState(() {});
               }
-              // ignore: use_build_context_synchronously
-              Navigator.pop(context);
+              if (context.mounted) Navigator.pop(context);
             },
             child: const Text("Add"),
           ),
         ],
       ),
     );
-
-    setState(() {});
   }
 
   @override
@@ -413,21 +391,18 @@ class _TopicDetailPageState extends State<TopicDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(topicName),
-        actions: [
-          IconButton(icon: const Icon(Icons.add), onPressed: _addNewWord),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.add), onPressed: _addWord)],
       ),
       body: words.isEmpty
           ? const Center(child: Text("No words found in this topic"))
           : ListView.builder(
               itemCount: words.length,
               itemBuilder: (context, index) {
-                final word = jsonDecode(words[index]) as Map<String, dynamic>;
-
+                final word = words[index] as Map<String, dynamic>;
                 return ListTile(
                   leading: const Icon(Icons.language),
-                  title: Text(word['en'] ?? "Unknown"),
-                  subtitle: Text(word['vi'] ?? ""),
+                  title: Text(word['en'] ?? ''),
+                  subtitle: Text(word['vi'] ?? ''),
                 );
               },
             ),

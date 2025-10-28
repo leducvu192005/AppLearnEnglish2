@@ -17,11 +17,11 @@ class _LayoutsMainState extends State<LayoutsMain> {
 
   // Danh sách các trang/tab
   final List<Widget> _pages = [
-    const HomeScreen(),
+    const HomePage(),
     const VocabularyPage(),
     const QuizProvider(),
     const ProgressProvider(),
-    const UserProvider(),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
