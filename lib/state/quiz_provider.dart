@@ -15,7 +15,9 @@ class _QuizProviderState extends State<QuizProvider> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Quiz Practice"), centerTitle: true),
+      appBar: AppBar(
+        //title: const Text("Quiz Practice"), centerTitle: true,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('quizzes').snapshots(),
         builder: (context, snapshot) {

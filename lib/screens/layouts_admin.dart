@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/admin/admin_screen.dart';
 import 'package:flutter_application_1/admin/quiz_management.dart';
+import 'package:flutter_application_1/admin/reports.dart';
 import 'package:flutter_application_1/admin/vocabulary_management.dart';
 import 'package:flutter_application_1/admin/user_management.dart';
 
@@ -19,6 +20,7 @@ class _LayoutsAdminState extends State<LayoutsAdmin> {
     AdminScreen(), // Tổng quan
     QuizManagement(), // Quản lý quiz
     VocabularyManagement(), // Quản lý từ vựng
+    Reports(), //  trang báo cáo
     UserManagement(), // Quản lý người dùng
   ];
 
@@ -77,6 +79,7 @@ class _LayoutsAdminState extends State<LayoutsAdmin> {
             icon: Icon(Icons.book_outlined),
             label: 'Từ vựng',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.report), label: 'Báo cáo'),
           BottomNavigationBarItem(
             icon: Icon(Icons.people_alt_outlined),
             label: 'Người dùng',

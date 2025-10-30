@@ -9,6 +9,7 @@ import 'package:flutter_application_1/screens/layouts_main.dart';
 import 'package:flutter_application_1/admin/quiz_management.dart';
 import 'package:flutter_application_1/admin/user_management.dart';
 import 'package:flutter_application_1/admin/vocabulary_management.dart';
+import 'package:flutter_application_1/admin/reports.dart';
 
 class AppRoute {
   static final Map<String, WidgetBuilder> routes = {
@@ -22,5 +23,6 @@ class AppRoute {
     '/adminquiz': (context) => const QuizManagement(),
     '/adminuser': (context) => const UserManagement(),
     '/adminvocabulary': (context) => const VocabularyManagement(),
+    'reports': (context) => const Reports(),
   };
 }

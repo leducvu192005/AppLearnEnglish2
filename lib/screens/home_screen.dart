@@ -61,7 +61,7 @@ class _HomePageState extends State<HomePage> {
     final user = _auth.currentUser;
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FF),
-      appBar: AppBar(),
+      appBar: AppBar(title: const Text('Welcome to English Learning App!')),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -136,6 +136,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 30),
 
+                  // 📚 Danh mục học tập
                   const Text(
                     "📚 Danh mục học tập",
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
