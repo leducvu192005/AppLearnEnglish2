@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_1/screens/layouts_main.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -64,7 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // ✅ Chuyển về màn hình đăng nhập
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const LayoutsMain()),
       );
     } on FirebaseAuthException catch (e) {
       String message = "Lỗi đăng ký: ${e.message}";

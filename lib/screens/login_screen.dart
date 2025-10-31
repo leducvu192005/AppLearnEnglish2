@@ -5,6 +5,7 @@ import 'package:flutter_application_1/screens/layouts_admin.dart';
 import 'package:flutter_application_1/screens/layouts_main.dart';
 import '../admin/admin_screen.dart';
 import 'register_screen.dart';
+import 'package:flutter_application_1/admin/app_logger.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,6 +50,14 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final role = userDoc.data()?['role'] ?? 'user';
+      final name = userDoc.data()?['name'] ?? 'User';
+      // Ghi log đăng nhập
+      if (role == 'user') {
+        AppLogger().log(
+          username: name,
+          activity: "Đăng nhập hệ thống với vai trò: $role",
+        );
+      }
 
       // Chuyển sang màn hình phù hợp
       if (role == 'admin') {

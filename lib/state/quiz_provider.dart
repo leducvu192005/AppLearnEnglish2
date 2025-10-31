@@ -258,7 +258,15 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
       'percent': percent,
       'completedAt': FieldValue.serverTimestamp(),
     });
-
+    // ghi lại log hoàn thành quiz
+    final user = FirebaseAuth.instance.currentUser;
+    final name = user?.displayName ?? user?.email ?? "Unknown";
+    await FirebaseFirestore.instance.collection('logs').add({
+      'username': name,
+      'activity':
+          "Hoàn thành quiz: ${widget.title} với điểm $correctCount / $total câu đúng (${(percent * 100).toStringAsFixed(1)}%)",
+      'timestamp': FieldValue.serverTimestamp(),
+    });
     // ✅ 3. Thông báo kết quả
     if (mounted) {
       showDialog(

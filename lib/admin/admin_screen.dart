@@ -84,6 +84,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           "Tổng người dùng",
                           totalUsers,
                           Colors.blueAccent,
+                          Icons.person,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -92,6 +93,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           "Tổng quiz",
                           totalQuizzes,
                           Colors.green,
+                          Icons.quiz,
                         ),
                       ),
                     ],
@@ -254,7 +256,7 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   // --- Ô thống kê tổng ---
-  Widget _buildStatCard(String title, int value, Color color) {
+  Widget _buildStatCard(String title, int value, Color color, IconData icon) {
     return Container(
       width: 140,
       padding: const EdgeInsets.all(16),
@@ -263,7 +265,10 @@ class _AdminScreenState extends State<AdminScreen> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(icon, color: color, size: 40), // 👈 icon ở đây
+          const SizedBox(height: 8),
           Text(
             "$value",
             style: TextStyle(
@@ -272,7 +277,10 @@ class _AdminScreenState extends State<AdminScreen> {
               color: color,
             ),
           ),
-          Text(title, style: TextStyle(color: color)),
+          Text(
+            title,
+            style: TextStyle(color: color, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );
