@@ -10,6 +10,7 @@ import 'package:flutter_application_1/admin/quiz_management.dart';
 import 'package:flutter_application_1/admin/user_management.dart';
 import 'package:flutter_application_1/admin/vocabulary_management.dart';
 import 'package:flutter_application_1/admin/reports.dart';
+import 'package:flutter_application_1/admin/setting.dart';
 
 class AppRoute {
   static final Map<String, WidgetBuilder> routes = {
@@ -20,9 +21,10 @@ class AppRoute {
     '/users': (context) => const UserScreen(),
     '/layouts': (context) => const LayoutsMain(),
     '/profile': (context) => const ProfilePage(),
-    '/adminquiz': (context) => const QuizManagement(),
-    '/adminuser': (context) => const UserManagement(),
-    '/adminvocabulary': (context) => const VocabularyManagement(),
+    '/admin/quiz': (context) => const QuizManagement(),
+    '/admin/users': (context) => const UserManagement(),
+    '/admin/vocabulary': (context) => const VocabularyManagement(),
     'reports': (context) => const Reports(),
+    '/settings': (context) => const Setting(),
   };
 }

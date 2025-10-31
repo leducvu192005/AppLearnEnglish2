@@ -236,6 +236,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
     final total = widget.totalQuestions;
     final percent = correctCount / total;
 
+    // ✅ 1. Lưu tiến độ riêng cho từng user
     await FirebaseFirestore.instance
         .collection('users')
         .doc(widget.userId)
@@ -245,19 +246,31 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
           'completed': correctCount,
           'total': total,
           'percent': percent,
+          'completedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
+    // ✅ 2. Lưu vào user_progress cho admin xem
+    await FirebaseFirestore.instance.collection('user_progress').add({
+      'userId': widget.userId,
+      'quizId': widget.quizId,
+      'score': correctCount,
+      'total': total,
+      'percent': percent,
+      'completedAt': FieldValue.serverTimestamp(),
+    });
+
+    // ✅ 3. Thông báo kết quả
     if (mounted) {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text("Completed!"),
-          content: Text("You got $correctCount / $total correct."),
+          title: const Text("🎉 Hoàn thành quiz!"),
+          content: Text("Bạn trả lời đúng $correctCount / $total câu."),
           actions: [
             TextButton(
               onPressed: () =>
                   Navigator.popUntil(context, (route) => route.isFirst),
-              child: const Text("Back to Quizzes"),
+              child: const Text("Về danh sách Quiz"),
             ),
           ],
         ),

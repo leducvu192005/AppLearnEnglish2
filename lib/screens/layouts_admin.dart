@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/admin/admin_screen.dart';
-import 'package:flutter_application_1/admin/quiz_management.dart';
 import 'package:flutter_application_1/admin/reports.dart';
-import 'package:flutter_application_1/admin/vocabulary_management.dart';
+import 'package:flutter_application_1/admin/setting.dart';
 import 'package:flutter_application_1/admin/user_management.dart';
 
 class LayoutsAdmin extends StatefulWidget {
@@ -16,12 +15,11 @@ class _LayoutsAdminState extends State<LayoutsAdmin> {
   int _selectedIndex = 0;
 
   // Danh sách các trang
-  final List<Widget> _pages = const [
+  final List<Widget> _pages = [
     AdminScreen(), // Tổng quan
-    QuizManagement(), // Quản lý quiz
-    VocabularyManagement(), // Quản lý từ vựng
     Reports(), //  trang báo cáo
     UserManagement(), // Quản lý người dùng
+    Setting(), // Cài đặt
   ];
 
   void _onItemTapped(int index) {
@@ -33,24 +31,33 @@ class _LayoutsAdminState extends State<LayoutsAdmin> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar kiểu gradient giống bên user
-      appBar: AppBar(
-        title: Text(
-          'Admin Dashboard\nQuản lý hệ thống học tiếng Anh',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+      // AppBar kiểu gradient và bo 2 góc dưới
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80), // Chiều cao AppBar
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
           ),
-          textAlign: TextAlign.left,
-        ),
-        automaticallyImplyLeading: false,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue, Color.fromARGB(255, 88, 3, 138)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+          child: AppBar(
+            title: const Text(
+              'Admin Dashboard\nQuản lý hệ thống học tiếng Anh',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.left,
+            ),
+            automaticallyImplyLeading: false,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue, Colors.lightBlueAccent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
             ),
           ),
         ),
@@ -71,19 +78,12 @@ class _LayoutsAdminState extends State<LayoutsAdmin> {
             icon: Icon(Icons.dashboard),
             label: 'Tổng quan',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.quiz_outlined),
-            label: 'Quiz',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book_outlined),
-            label: 'Từ vựng',
-          ),
           BottomNavigationBarItem(icon: Icon(Icons.report), label: 'Báo cáo'),
           BottomNavigationBarItem(
             icon: Icon(Icons.people_alt_outlined),
             label: 'Người dùng',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Cài đặt'),
         ],
       ),
     );
