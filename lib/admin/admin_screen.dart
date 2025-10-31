@@ -12,9 +12,8 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   final _firestore = FirebaseFirestore.instance;
-
-  int totalUsers = 0;
   int totalQuizzes = 0;
+  int totalUsers = 0;
   bool isLoading = true;
 
   Map<String, int> userGrowth = {}; // Số người dùng theo tháng
@@ -30,7 +29,6 @@ class _AdminScreenState extends State<AdminScreen> {
       final users = await _firestore.collection('users').get();
       final quizzes = await _firestore.collection('quizzes').get();
 
-      // Đếm người dùng theo tháng
       final now = DateTime.now();
       final Map<String, int> growth = {};
 
@@ -43,13 +41,11 @@ class _AdminScreenState extends State<AdminScreen> {
         growth[monthKey] = (growth[monthKey] ?? 0) + 1;
       }
 
-      // Lấy 3 tháng gần nhất
       final last3Months = List.generate(3, (i) {
         final date = DateTime(now.year, now.month - i, 1);
         return "${date.month}-${date.year}";
       }).reversed.toList();
 
-      // Chỉ lấy 3 tháng gần nhất
       final filteredGrowth = {
         for (var key in last3Months) key: growth[key] ?? 0,
       };
@@ -78,87 +74,92 @@ class _AdminScreenState extends State<AdminScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          "Tổng người dùng",
-                          totalUsers,
-                          Colors.blueAccent,
-                          Icons.person,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          "Tổng quiz",
-                          totalQuizzes,
-                          Colors.green,
-                          Icons.quiz,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-                  const Text(
-                    "Thao tác nhanh",
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: double.infinity, // ✅ Chiếm toàn bộ chiều ngang
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/admin/vocabulary');
-                          },
-                          icon: const Icon(Icons.book),
-                          label: const Text(
-                            "Quản lý từ vựng",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  // --- Quản lý ---
+                  Card(
+                    margin: const EdgeInsets.only(top: 10),
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '⚙️ Quản lý từ vựng và quiz',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                      ),
+                          const SizedBox(height: 10),
 
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity, // ✅ Chiếm toàn bộ chiều ngang
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/admin/quiz');
-                          },
-                          icon: const Icon(Icons.book),
-                          label: const Text(
-                            "Quản lý quiz",
-                            style: TextStyle(color: Colors.white),
+                          // Hai card con nằm trên 1 hàng
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildManageCard(
+                                  color: Colors.blueAccent,
+                                  icon: Icons.book,
+                                  title: "Thêm bộ từ vựng",
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/admin/vocabulary',
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildManageCard(
+                                  color: Colors.lightGreen,
+                                  icon: Icons.quiz,
+                                  title: "Thêm bộ quiz",
+                                  onTap: () {
+                                    Navigator.pushNamed(context, '/admin/quiz');
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // --- Biểu đồ tăng trưởng ---
+                  Card(
+                    margin: const EdgeInsets.only(top: 1),
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "📈 Tăng trưởng người dùng (3 tháng gần nhất)",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 200,
+                            child: UserGrowthChart(data: userGrowth),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
+
                   const SizedBox(height: 10),
-                  const Text(
-                    "🕓 Hoạt động gần đây",
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
+
                   _buildLogsSection(),
                 ],
               ),
@@ -166,8 +167,7 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  //ghi lại hoạt động gần đây
-
+  // --- Nhật ký hoạt động ---
   Widget _buildLogsSection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -214,10 +214,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         : 'N/A';
 
                     return ListTile(
-                      leading: const Icon(
-                        Icons.history,
-                        color: Colors.blueAccent,
-                      ),
+                      leading: const Icon(Icons.history, color: Colors.blue),
                       title: Text(activity),
                       subtitle: Text("$username • $time"),
                     );
@@ -234,7 +231,6 @@ class _AdminScreenState extends State<AdminScreen> {
   // --- Ô thống kê tổng ---
   Widget _buildStatCard(String title, int value, Color color, IconData icon) {
     return Container(
-      width: 140,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
@@ -243,7 +239,7 @@ class _AdminScreenState extends State<AdminScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 40), // 👈 icon ở đây
+          Icon(icon, color: color, size: 40),
           const SizedBox(height: 8),
           Text(
             "$value",
@@ -258,6 +254,92 @@ class _AdminScreenState extends State<AdminScreen> {
             style: TextStyle(color: color, fontWeight: FontWeight.w500),
           ),
         ],
+      ),
+    );
+  }
+}
+
+Widget _buildManageCard({
+  required Color color,
+  required IconData icon,
+  required String title,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Container(
+      height: 110,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 36),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// --- Widget biểu đồ tăng trưởng ---
+class UserGrowthChart extends StatelessWidget {
+  final Map<String, int> data;
+
+  const UserGrowthChart({super.key, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final keys = data.keys.toList();
+    final values = data.values.toList();
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        borderData: FlBorderData(show: false),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (double value, _) {
+                final index = value.toInt();
+                if (index >= 0 && index < keys.length) {
+                  return Text(
+                    keys[index],
+                    style: const TextStyle(fontSize: 12),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: true, reservedSize: 28),
+          ),
+        ),
+        barGroups: List.generate(values.length, (i) {
+          return BarChartGroupData(
+            x: i,
+            barRods: [
+              BarChartRodData(
+                toY: values[i].toDouble(),
+                color: Colors.blueAccent,
+                width: 22,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
