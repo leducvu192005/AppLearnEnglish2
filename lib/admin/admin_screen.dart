@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -98,21 +99,15 @@ class _AdminScreenState extends State<AdminScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "📈 Biểu đồ người dùng trong 3 tháng gần nhất",
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
 
-                  _buildBarChart(),
                   const SizedBox(height: 10),
                   const Text(
-                    "⚙️ Quản lý hệ thống",
+                    "Thao tác nhanh",
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
 
-                  Column(
+                  Row(
                     children: [
                       SizedBox(
                         width: double.infinity, // ✅ Chiếm toàn bộ chiều ngang
@@ -158,100 +153,81 @@ class _AdminScreenState extends State<AdminScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "🕓 Hoạt động gần đây",
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildLogsSection(),
                 ],
               ),
             ),
     );
   }
 
-  // --- Biểu đồ cột người dùng ---
-  Widget _buildBarChart() {
-    final barGroups = <BarChartGroupData>[];
-    final monthLabels = <String>[];
+  //ghi lại hoạt động gần đây
 
-    int index = 0;
-    userGrowth.forEach((month, count) {
-      barGroups.add(
-        BarChartGroupData(
-          x: index,
-          barRods: [
-            BarChartRodData(
-              toY: count.toDouble(),
-              color: Colors.blueAccent,
-              width: 28,
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ],
-        ),
-      );
-      monthLabels.add(month); // ví dụ "10-2025"
-      index++;
-    });
+  Widget _buildLogsSection() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('logs')
+          .orderBy('timestamp', descending: true)
+          .limit(50)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return Container(
-      height: 250,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+        final logs = snapshot.data!.docs;
+
+        return Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
-      ),
-      child: BarChart(
-        BarChartData(
-          maxY:
-              (userGrowth.values.isEmpty
-                      ? 1
-                      : (userGrowth.values.reduce((a, b) => a > b ? a : b) + 1))
-                  .toDouble(),
-          gridData: FlGridData(show: true, drawVerticalLine: false),
-          borderData: FlBorderData(show: false),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                getTitlesWidget: (value, _) => Text(
-                  value.toInt().toString(),
-                  style: const TextStyle(fontSize: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "🕒 Nhật ký hoạt động gần đây",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, _) {
-                  if (value.toInt() >= 0 &&
-                      value.toInt() < monthLabels.length) {
-                    final parts = monthLabels[value.toInt()].split('-');
-                    return Text(
-                      "Th${parts[0]}",
-                      style: const TextStyle(fontSize: 12),
+                const SizedBox(height: 10),
+                ListView.separated(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  separatorBuilder: (_, __) =>
+                      Divider(color: Colors.grey.shade300),
+                  itemCount: logs.length,
+                  itemBuilder: (context, index) {
+                    final log = logs[index];
+                    final username = log['username'] ?? 'Unknown';
+                    final activity = log['activity'] ?? '';
+                    final time = log['timestamp'] != null
+                        ? DateFormat(
+                            'dd/MM/yyyy HH:mm:ss',
+                          ).format((log['timestamp'] as Timestamp).toDate())
+                        : 'N/A';
+
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.history,
+                        color: Colors.blueAccent,
+                      ),
+                      title: Text(activity),
+                      subtitle: Text("$username • $time"),
                     );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
+                  },
+                ),
+              ],
             ),
           ),
-          barGroups: barGroups,
-          // 🟢 Animation khi biểu đồ hiển thị
-          barTouchData: BarTouchData(enabled: true),
-        ),
-        swapAnimationDuration: const Duration(milliseconds: 800),
-        swapAnimationCurve: Curves.easeOut,
-      ),
+        );
+      },
     );
   }
 
