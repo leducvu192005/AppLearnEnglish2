@@ -13,6 +13,10 @@ class Reports extends StatefulWidget {
 class _ReportsState extends State<Reports> {
   final CollectionReference userProgress = FirebaseFirestore.instance
       .collection('user_progress');
+  // 🔹 Biến để lọc
+  String _searchText = '';
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   final List<String> weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
@@ -51,6 +55,12 @@ class _ReportsState extends State<Reports> {
         double avgPercent = 0;
         final uniqueUsers = <String>{};
 
+        // ✅ Đếm quiz hoàn thành (có isCompleted = true hoặc percent >= 1.0)
+        final completedCount = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['isCompleted'] == true || (data['percent'] ?? 0) >= 1.0;
+        }).length;
+
         for (var doc in docs) {
           final data = doc.data() as Map<String, dynamic>;
           avgPercent += (data['percent'] ?? 0.0);
@@ -73,6 +83,11 @@ class _ReportsState extends State<Reports> {
               "Điểm trung bình",
               "${(avgPercent * 100).toStringAsFixed(1)}%",
               Colors.orange,
+            ),
+            _buildStatCard(
+              "Quiz đã hoàn thành",
+              "$completedCount",
+              Colors.purple,
             ),
           ],
         );
@@ -225,22 +240,48 @@ class _ReportsState extends State<Reports> {
     );
   }
 
-  // --------------------------------------------------------
-  // 🔹 PHẦN 3: Log hoạt động
-  // --------------------------------------------------------
+  //lọc theo thời gian và từ khóa
   Widget _buildLogsSection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('logs')
           .orderBy('timestamp', descending: true)
-          .limit(50)
+          .limit(200)
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final logs = snapshot.data!.docs;
+        final allLogs = snapshot.data!.docs;
+
+        // ✅ Lọc dữ liệu theo từ khóa và ngày
+        final filteredLogs = allLogs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final username = (data['username'] ?? '').toString().toLowerCase();
+          final activity = (data['activity'] ?? '').toString().toLowerCase();
+          final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+
+          bool matchesText =
+              _searchText.isEmpty ||
+              username.contains(_searchText.toLowerCase()) ||
+              activity.contains(_searchText.toLowerCase());
+
+          bool matchesDate = true;
+          if (_startDate != null && timestamp != null) {
+            matchesDate =
+                timestamp.isAfter(_startDate!) ||
+                timestamp.isAtSameMomentAs(_startDate!);
+          }
+          if (_endDate != null && timestamp != null) {
+            matchesDate =
+                matchesDate &&
+                (timestamp.isBefore(_endDate!.add(const Duration(days: 1))) ||
+                    timestamp.isAtSameMomentAs(_endDate!));
+          }
+
+          return matchesText && matchesDate;
+        }).toList();
 
         return Card(
           elevation: 3,
@@ -253,24 +294,85 @@ class _ReportsState extends State<Reports> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "🕒 Nhật ký hoạt động gần đây",
+                  "🕒 Nhật ký hoạt động",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 10),
+
+                // 🔹 Thanh tìm kiếm + chọn ngày
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: '🔍 Tìm theo người dùng hoặc hoạt động...',
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() => _searchText = value);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.date_range, color: Colors.blue),
+                      onPressed: () async {
+                        final picked = await showDateRangePicker(
+                          context: context,
+                          firstDate: DateTime(2023, 1, 1),
+                          lastDate: DateTime.now(),
+                          initialDateRange:
+                              _startDate != null && _endDate != null
+                              ? DateTimeRange(
+                                  start: _startDate!,
+                                  end: _endDate!,
+                                )
+                              : null,
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _startDate = picked.start;
+                            _endDate = picked.end;
+                          });
+                        }
+                      },
+                    ),
+                    if (_startDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            _startDate = null;
+                            _endDate = null;
+                          });
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // 🔹 Danh sách log đã lọc
                 ListView.separated(
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
                   separatorBuilder: (_, __) =>
                       Divider(color: Colors.grey.shade300),
-                  itemCount: logs.length,
+                  itemCount: filteredLogs.length,
                   itemBuilder: (context, index) {
-                    final log = logs[index];
-                    final username = log['username'] ?? 'Unknown';
-                    final activity = log['activity'] ?? '';
-                    final time = log['timestamp'] != null
+                    final log = filteredLogs[index];
+                    final data = log.data() as Map<String, dynamic>;
+                    final username = data['username'] ?? 'Unknown';
+                    final activity = data['activity'] ?? '';
+                    final time = data['timestamp'] != null
                         ? DateFormat(
                             'dd/MM/yyyy HH:mm:ss',
-                          ).format((log['timestamp'] as Timestamp).toDate())
+                          ).format((data['timestamp'] as Timestamp).toDate())
                         : 'N/A';
 
                     return ListTile(

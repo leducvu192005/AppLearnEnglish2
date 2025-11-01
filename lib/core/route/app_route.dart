@@ -11,6 +11,7 @@ import 'package:flutter_application_1/admin/user_management.dart';
 import 'package:flutter_application_1/admin/vocabulary_management.dart';
 import 'package:flutter_application_1/admin/reports.dart';
 import 'package:flutter_application_1/admin/setting.dart';
+import 'package:flutter_application_1/state/quiz_provider.dart';
 
 class AppRoute {
   static final Map<String, WidgetBuilder> routes = {
@@ -26,5 +27,6 @@ class AppRoute {
     '/admin/vocabulary': (context) => const VocabularyManagement(),
     'reports': (context) => const Reports(),
     '/settings': (context) => const Setting(),
+    '/quiz': (context) => const QuizProvider(),
   };
 }
