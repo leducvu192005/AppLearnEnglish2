@@ -54,18 +54,42 @@ class SkillSeeder {
         "topics": {
           "daily": {
             "name": "Daily Routine",
-            "image": "https://res.cloudinary.com/demo/image/upload/daily.jpg",
+            "image":
+                "https://res.cloudinary.com/demo/image/upload/v1720000000/daily.jpg",
             "description": "Listen to daily conversations.",
             "audios": [
               {
                 "audioUrl":
-                    "https://res.cloudinary.com/demo/video/upload/audio1.mp3",
+                    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
                 "transcript": "I wake up at 6 a.m. and go to school.",
                 "questions": [
                   {
-                    "question": "What time does the speaker wake up?",
-                    "options": ["5 a.m.", "6 a.m.", "7 a.m.", "8 a.m."],
-                    "correctAnswer": "6 a.m.",
+                    "question": "Where does the speaker go after waking up?",
+                    "options": [
+                      "To work",
+                      "To school",
+                      "To the gym",
+                      "To the park",
+                    ],
+                    "correctAnswer": "To school",
+                  },
+                ],
+              },
+              {
+                "audioUrl":
+                    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+                "transcript":
+                    "After school, I do my homework and play football with friends.",
+                "questions": [
+                  {
+                    "question": "What does the speaker do after school?",
+                    "options": [
+                      "Watch TV",
+                      "Do homework and play football",
+                      "Go shopping",
+                      "Sleep",
+                    ],
+                    "correctAnswer": "Do homework and play football",
                   },
                 ],
               },

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'listening_topic_screen.dart';
 
 class ListeningScreen extends StatefulWidget {
   const ListeningScreen({super.key});
@@ -11,7 +11,6 @@ class ListeningScreen extends StatefulWidget {
 
 class _ListeningScreenState extends State<ListeningScreen> {
   final firestore = FirebaseFirestore.instance;
-  final player = AudioPlayer();
 
   @override
   Widget build(BuildContext context) {
@@ -36,40 +35,50 @@ class _ListeningScreenState extends State<ListeningScreen> {
               final topic = topics[index];
               final data = topic.data() as Map<String, dynamic>;
 
-              return ExpansionTile(
-                leading: Image.network(
-                  data['image'],
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
-                title: Text(data['name']),
-                subtitle: Text(data['description']),
-                children: [
-                  StreamBuilder<QuerySnapshot>(
-                    stream: topic.reference.collection('audios').snapshots(),
-                    builder: (context, audioSnap) {
-                      if (!audioSnap.hasData)
-                        return const CircularProgressIndicator();
-                      final audios = audioSnap.data!.docs;
-
-                      return Column(
-                        children: audios.map((audioDoc) {
-                          final audio = audioDoc.data() as Map<String, dynamic>;
-                          return ListTile(
-                            title: Text(audio['transcript']),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.play_arrow),
-                              onPressed: () async {
-                                await player.play(UrlSource(audio['audioUrl']));
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ListeningTopicScreen(topicId: topic.id),
+                    ),
+                  );
+                },
+                child: Card(
+                  margin: const EdgeInsets.all(12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(15),
+                          bottomLeft: Radius.circular(15),
+                        ),
+                        child: Image.network(
+                          data['image'],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          data['name'],
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 20),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                ),
               );
             },
           );
