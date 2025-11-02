@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// import 4 file kỹ năng
 import 'skills/listening_screen.dart';
 import 'skills/speaking_screen.dart';
 import 'skills/reading_screen.dart';

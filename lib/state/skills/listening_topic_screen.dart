@@ -58,12 +58,17 @@ class _ListeningTopicScreenState extends State<ListeningTopicScreen> {
     final user = FirebaseAuth.instance.currentUser;
     final name = user?.displayName ?? user?.email ?? "Unknown";
     // Ghi log kết quả
-    await FirebaseFirestore.instance.collection('logs').add({
-      'username': name,
-      'activity':
-          "Hoàn thành bài nghe: ${widget.topicId} với điểm $totalCorrect / $totalQuestions câu đúng (${score}%)",
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    try {
+      await FirebaseFirestore.instance.collection('logs').add({
+        'username': name,
+        'activity':
+            "Hoàn thành bài nghe: ${widget.topicId} với điểm $totalCorrect / $totalQuestions câu đúng (${score}%)",
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      print("Ghi log thành công");
+    } catch (e) {
+      print("Lỗi ghi log: $e");
+    }
 
     showDialog(
       context: context,
