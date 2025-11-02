@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'reading_detail_screen.dart';
 
 class ReadingScreen extends StatelessWidget {
   const ReadingScreen({super.key});
@@ -17,8 +18,10 @@ class ReadingScreen extends StatelessWidget {
             .collection('topics')
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
+
           final topics = snapshot.data!.docs;
 
           return ListView.builder(
@@ -27,51 +30,26 @@ class ReadingScreen extends StatelessWidget {
               final topic = topics[index];
               final data = topic.data() as Map<String, dynamic>;
 
-              return ExpansionTile(
+              return ListTile(
                 leading: Image.network(
                   data['image'],
-                  width: 50,
-                  height: 50,
+                  width: 60,
+                  height: 60,
                   fit: BoxFit.cover,
                 ),
                 title: Text(data['name']),
                 subtitle: Text(data['description']),
-                children: [
-                  StreamBuilder<QuerySnapshot>(
-                    stream: topic.reference.collection('lessons').snapshots(),
-                    builder: (context, lessonSnap) {
-                      if (!lessonSnap.hasData)
-                        return const CircularProgressIndicator();
-                      final lessons = lessonSnap.data!.docs;
-
-                      return Column(
-                        children: lessons.map((lessonDoc) {
-                          final lesson =
-                              lessonDoc.data() as Map<String, dynamic>;
-                          return Card(
-                            margin: const EdgeInsets.all(8),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    lesson['passage'] ?? '',
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ...(lesson['questions'] as List)
-                                      .map((q) => Text("• ${q['question']}"))
-                                      .toList(),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-                ],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReadingDetailScreen(
+                        topicId: topic.id,
+                        topicData: data,
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
