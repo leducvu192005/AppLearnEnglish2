@@ -134,7 +134,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 🎯 Kỹ năng nghe nói
                   Row(
                     children: [
                       Expanded(
@@ -212,6 +211,13 @@ class _HomePageState extends State<HomePage> {
                         gradient: [Colors.orangeAccent, Colors.deepOrange],
                         onTap: () => Navigator.pushNamed(context, '/quiz'),
                       ),
+                      // 🆕 Thêm card dẫn đến trang quá trình
+                      _buildCategoryCard(
+                        title: "Quá trình học",
+                        icon: Icons.trending_up,
+                        gradient: [Colors.purpleAccent, Colors.deepPurple],
+                        onTap: () => Navigator.pushNamed(context, '/progress'),
+                      ),
                     ],
                   ),
                 ],
@@ -220,7 +226,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 🔹 Card kỹ năng (Nghe, Nói)
+  // 🔹 Card kỹ năng
   Widget _buildSkillCard({
     required String title,
     required IconData icon,
@@ -261,7 +267,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 🔹 Card danh mục (Từ vựng, Quiz, Viết, Trang cá nhân)
+  // 🔹 Card danh mục (Từ vựng, Quiz, Quá trình)
   Widget _buildCategoryCard({
     required String title,
     required IconData icon,

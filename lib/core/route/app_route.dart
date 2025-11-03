@@ -16,6 +16,8 @@ import 'package:flutter_application_1/state/skills/listening_screen.dart';
 import 'package:flutter_application_1/state/skills/speaking_screen.dart';
 import 'package:flutter_application_1/state/skills/reading_screen.dart';
 import 'package:flutter_application_1/state/skills/writing_screen.dart';
+import 'package:flutter_application_1/state/ai_chat_screen.dart';
+import 'package:flutter_application_1/state/progress_provider.dart';
 
 class AppRoute {
   static final Map<String, WidgetBuilder> routes = {
@@ -36,5 +38,7 @@ class AppRoute {
     '/skills/speaking': (context) => const SpeakingScreen(),
     '/skills/reading': (context) => const ReadingScreen(),
     '/skills/writing': (context) => const WritingScreen(),
+    '/chatbox': (context) => const AiChatScreen(),
+    '/progress': (context) => const ProgressProvider(),
   };
 }
