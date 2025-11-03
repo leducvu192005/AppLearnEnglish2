@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'quiz_edit_screen.dart';
+import 'skill_detail_page.dart';
 
 class QuizManagement extends StatefulWidget {
   const QuizManagement({Key? key}) : super(key: key);
@@ -16,7 +17,6 @@ class _QuizManagementState extends State<QuizManagement> {
 
   String _searchTerm = '';
 
-  // Hàm xóa quiz với xác nhận
   Future<void> _deleteQuiz(String id, String title) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -58,12 +58,12 @@ class _QuizManagementState extends State<QuizManagement> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Thanh tìm kiếm
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            // 🔹 Thanh tìm kiếm
+            TextField(
               decoration: InputDecoration(
                 hintText: 'Tìm kiếm quiz...',
                 prefixIcon: const Icon(Icons.search),
@@ -74,9 +74,10 @@ class _QuizManagementState extends State<QuizManagement> {
               onChanged: (val) =>
                   setState(() => _searchTerm = val.toLowerCase()),
             ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
+            const SizedBox(height: 12),
+
+            // 🔹 Danh sách quiz
+            StreamBuilder<QuerySnapshot>(
               stream: quizzes.snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -89,15 +90,18 @@ class _QuizManagementState extends State<QuizManagement> {
                 }).toList();
 
                 if (data.isEmpty) {
-                  return const Center(child: Text("Không tìm thấy quiz nào"));
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text("Không tìm thấy quiz nào"),
+                    ),
+                  );
                 }
 
-                return ListView.builder(
-                  itemCount: data.length,
-                  itemBuilder: (context, index) {
-                    final quiz = data[index];
+                return Column(
+                  children: data.map((quiz) {
                     return Card(
-                      margin: const EdgeInsets.all(8),
+                      margin: const EdgeInsets.symmetric(vertical: 6),
                       child: ListTile(
                         title: Text(
                           quiz['title'],
@@ -132,12 +136,97 @@ class _QuizManagementState extends State<QuizManagement> {
                         ),
                       ),
                     );
-                  },
+                  }).toList(),
                 );
               },
             ),
-          ),
-        ],
+
+            const SizedBox(height: 20),
+            const Divider(thickness: 1),
+
+            // 🔹 Phần hiển thị 4 kỹ năng
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                "Kỹ năng luyện tập",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics:
+                  const NeverScrollableScrollPhysics(), // tránh conflict scroll
+              padding: const EdgeInsets.all(8),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              children: [
+                _buildSkillCard(
+                  context,
+                  'Listening',
+                  Icons.headphones,
+                  Colors.blue,
+                  'listening',
+                ),
+                _buildSkillCard(
+                  context,
+                  'Speaking',
+                  Icons.mic,
+                  Colors.redAccent,
+                  'speaking',
+                ),
+                _buildSkillCard(
+                  context,
+                  'Reading',
+                  Icons.book,
+                  Colors.green,
+                  'reading',
+                ),
+                _buildSkillCard(
+                  context,
+                  'Writing',
+                  Icons.edit,
+                  Colors.orange,
+                  'writing',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🔹 Hàm tạo thẻ kỹ năng
+  Widget _buildSkillCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    String skillId,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => SkillDetailPage(skillId: skillId)),
+        );
+      },
+      child: Card(
+        color: color.withOpacity(0.1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 2,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 40),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.bold, color: color),
+            ),
+          ],
+        ),
       ),
     );
   }

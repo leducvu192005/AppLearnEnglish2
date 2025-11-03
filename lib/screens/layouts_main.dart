@@ -33,24 +33,32 @@ class _LayoutsMainState extends State<LayoutsMain> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar gradient + title xuống dòng
-      appBar: AppBar(
-        title: Text(
-          'English Learning App\nKeep learning english every day!',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80), // Chiều cao AppBar
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
           ),
-          textAlign: TextAlign.left,
-        ),
-        automaticallyImplyLeading: false,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue, Color.fromARGB(255, 88, 3, 138)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+          child: AppBar(
+            title: const Text(
+              'English Learning App\nKeep learning english every day!',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.left,
+            ),
+            automaticallyImplyLeading: false,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue, Colors.lightBlueAccent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
             ),
           ),
         ),
