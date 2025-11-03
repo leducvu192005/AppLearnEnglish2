@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/state/user_provider.dart';
-import 'package:flutter_application_1/user/user_screen.dart';
 import 'package:flutter_application_1/screens/home_screen.dart';
 import 'package:flutter_application_1/screens/login_screen.dart';
 import 'package:flutter_application_1/screens/register_screen.dart';
@@ -24,9 +23,8 @@ class AppRoute {
     '/register': (context) => const RegisterScreen(),
     '/home': (context) => const HomePage(),
     '/admin': (context) => const AdminScreen(),
-    '/users': (context) => const UserScreen(),
     '/layouts': (context) => const LayoutsMain(),
-    '/profile': (context) => const ProfilePage(),
+    '/profile': (context) => const UserProviderPage(),
     '/admin/quiz': (context) => const QuizManagement(),
     '/admin/users': (context) => const UserManagement(),
     '/admin/vocabulary': (context) => const VocabularyManagement(),

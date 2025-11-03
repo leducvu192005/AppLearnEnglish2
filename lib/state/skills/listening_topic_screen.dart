@@ -89,6 +89,23 @@ class _ListeningTopicScreenState extends State<ListeningTopicScreen> {
         ],
       ),
     );
+
+    try {
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('user_progress').add({
+          'userId': user.uid,
+          'topicId': widget.topicId,
+          'skill': 'listening',
+          'score': double.tryParse(score) ?? 0,
+          'totalCorrect': totalCorrect,
+          'totalQuestions': totalQuestions,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        print("✅ user_progress đã lưu!");
+      }
+    } catch (e) {
+      print("⚠️ Lỗi khi lưu user_progress: $e");
+    }
   }
 
   @override

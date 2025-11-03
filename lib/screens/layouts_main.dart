@@ -21,7 +21,7 @@ class _LayoutsMainState extends State<LayoutsMain> {
     const VocabularyPage(),
     const QuizProvider(),
     const ProgressProvider(),
-    const ProfilePage(),
+    const UserProviderPage(),
   ];
 
   void _onItemTapped(int index) {

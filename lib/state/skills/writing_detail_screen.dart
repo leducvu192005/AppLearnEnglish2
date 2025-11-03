@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class WritingDetailScreen extends StatefulWidget {
   final String topicId;
@@ -67,6 +68,33 @@ class _WritingDetailScreenState extends State<WritingDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("✅ Đã chấm điểm thành công!")),
         );
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          try {
+            final docRef = await FirebaseFirestore.instance
+                .collection('user_progress')
+                .add({
+                  'userId': user.uid,
+                  'username': user.displayName ?? user.email ?? 'Unknown',
+                  'topicId': widget.topicId,
+                  'skill': 'writing',
+                  'text': text,
+                  'evaluation': jsonData['evaluation'] ?? '',
+                  'timestamp': FieldValue.serverTimestamp(),
+                });
+
+            // ✅ Xác nhận lưu thành công
+            print("✅ Đã lưu user_progress (writing) với ID: ${docRef.id}");
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Lưu tiến độ viết thành công ✅")),
+            );
+          } catch (e) {
+            print("❌ Lỗi khi lưu user_progress (writing): $e");
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text("Lỗi khi lưu tiến độ: $e")));
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

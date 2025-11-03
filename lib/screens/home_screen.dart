@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:percent_indicator/percent_indicator.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -59,9 +58,26 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FF),
-      appBar: AppBar(title: const Text('Welcome to English Learning App!')),
+      backgroundColor: const Color(0xFFF5F7FB),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          "Xin chào, ${user?.email?.split('@').first ?? 'Người học'} 👋",
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: _loadProgress,
+            icon: const Icon(Icons.refresh, color: Colors.black54),
+          ),
+        ],
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -69,106 +85,134 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 👋 Header
+                  // 🌟 Tiến độ học tập
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Tiến độ học tập của bạn",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: progress,
+                          borderRadius: BorderRadius.circular(8),
+                          minHeight: 10,
+                          color: Colors.blueAccent,
+                          backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "$completed / $total Bài flashcard đã hoàn thành (${(progress * 100).toStringAsFixed(0)}%)",
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  const Text(
+                    "Luyện tập kỹ năng",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 🎯 Kỹ năng nghe nói
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 35,
-                        backgroundColor: Colors.blueAccent.withOpacity(0.2),
-                        child: const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.blueAccent,
+                      Expanded(
+                        child: _buildSkillCard(
+                          title: "Nghe",
+                          icon: Icons.hearing_rounded,
+                          gradient: [Colors.blueAccent, Colors.lightBlue],
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/skills/listening'),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Xin chào, ${user?.email ?? 'Người học'} 👋",
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Text(
-                              "Chào mừng bạn quay lại học hôm nay!",
-                              style: TextStyle(color: Colors.black54),
-                            ),
-                          ],
+                        child: _buildSkillCard(
+                          title: "Nói",
+                          icon: Icons.mic_rounded,
+                          gradient: [Colors.pinkAccent, Colors.redAccent],
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/skills/speaking'),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 40),
-
-                  // 🔵 Thanh tiến độ
-                  Center(
-                    child: CircularPercentIndicator(
-                      radius: 90,
-                      lineWidth: 12,
-                      percent: progress.clamp(0.0, 1.0),
-                      animation: true,
-                      animationDuration: 1200,
-                      progressColor: Colors.blueAccent,
-                      backgroundColor: Colors.grey.shade300,
-                      circularStrokeCap: CircularStrokeCap.round,
-                      center: Text(
-                        "${(progress * 100).toStringAsFixed(0)}%",
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSkillCard(
+                          title: "Đọc",
+                          icon: Icons.menu_book_rounded,
+                          gradient: [Colors.green, Colors.lightGreen],
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/skills/reading'),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      "$completed / $total bài quiz đã hoàn thành",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSkillCard(
+                          title: "Viết",
+                          icon: Icons.edit_note_rounded,
+                          gradient: [Colors.indigoAccent, Colors.blueGrey],
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/skills/writing'),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
+
                   const SizedBox(height: 30),
 
-                  // 📚 Danh mục học tập
                   const Text(
-                    "📚 Danh mục học tập",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    "Danh mục học tập",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  _buildCard(
-                    context,
-                    title: "Từ vựng",
-                    icon: Icons.book_rounded,
-                    colors: [Colors.greenAccent, Colors.teal],
-                    onTap: () {
-                      Navigator.pushNamed(context, '/vocabulary');
-                    },
-                  ),
-                  _buildCard(
-                    context,
-                    title: "Làm bài Quiz",
-                    icon: Icons.quiz_rounded,
-                    colors: [Colors.orangeAccent, Colors.deepOrange],
-                    onTap: () {
-                      Navigator.pushNamed(context, '/quiz');
-                    },
-                  ),
-                  _buildCard(
-                    context,
-                    title: "Trang cá nhân",
-                    icon: Icons.person_rounded,
-                    colors: [Colors.purpleAccent, Colors.deepPurple],
-                    onTap: () {
-                      Navigator.pushNamed(context, '/profile');
-                    },
+                  // 📚 Danh mục (hiển thị dạng grid)
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    children: [
+                      _buildCategoryCard(
+                        title: "Từ vựng",
+                        icon: Icons.book_rounded,
+                        gradient: [Colors.greenAccent, Colors.teal],
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/vocabulary'),
+                      ),
+                      _buildCategoryCard(
+                        title: "Quiz",
+                        icon: Icons.quiz_rounded,
+                        gradient: [Colors.orangeAccent, Colors.deepOrange],
+                        onTap: () => Navigator.pushNamed(context, '/quiz'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -176,54 +220,82 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCard(
-    BuildContext context, {
+  // 🔹 Card kỹ năng (Nghe, Nói)
+  Widget _buildSkillCard({
     required String title,
     required IconData icon,
-    required List<Color> colors,
+    required List<Color> gradient,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: colors),
-          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(colors: gradient),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: colors.last.withOpacity(0.3),
+              color: gradient.last.withOpacity(0.3),
               blurRadius: 8,
               offset: const Offset(2, 4),
             ),
           ],
         ),
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.3),
-                radius: 28,
-                child: Icon(icon, color: Colors.white, size: 28),
-              ),
-              const SizedBox(width: 20),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              const Icon(
-                Icons.arrow_forward_ios,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 40),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
                 color: Colors.white,
-                size: 18,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🔹 Card danh mục (Từ vựng, Quiz, Viết, Trang cá nhân)
+  Widget _buildCategoryCard({
+    required String title,
+    required IconData icon,
+    required List<Color> gradient,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: gradient),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.last.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(2, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 36),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

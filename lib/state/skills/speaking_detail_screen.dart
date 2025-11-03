@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SpeakingDetailScreen extends StatefulWidget {
   final String topicId;
@@ -122,6 +123,31 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("✅ Đã chấm điểm thành công!")),
         );
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          try {
+            await FirebaseFirestore.instance.collection('user_progress').add({
+              'userId': user.uid,
+              'username': user.displayName ?? user.email ?? 'Unknown',
+              'topicId': widget.topicId,
+              'skill': 'speaking',
+              'transcript': jsonData['transcript'] ?? '',
+              'evaluation': jsonData['evaluation'] ?? '',
+              'timestamp': FieldValue.serverTimestamp(),
+            });
+
+            // ✅ Xác nhận lưu thành công (hiện trong console + thông báo)
+            print("✅ Đã lưu user_progress cho ${user.uid}");
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Lưu tiến độ nói thành công ✅")),
+            );
+          } catch (e) {
+            print("❌ Lỗi khi lưu user_progress: $e");
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text("Lỗi khi lưu tiến độ: $e")));
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("❌ Lỗi: ${response.statusCode}\n$respStr")),

@@ -89,6 +89,31 @@ class _ReadingDetailScreenState extends State<ReadingDetailScreen> {
         ],
       ),
     );
+    // 🟢 Ghi kết quả vào bảng userprogress
+    if (user != null) {
+      try {
+        await _firestore.collection('user_progress').add({
+          'userId': user.uid,
+          'username': name,
+          'topicId': widget.topicId,
+          'correct': totalCorrect,
+          'total': totalQuestions,
+          'score': score,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
+        // ✅ Xác nhận lưu thành công (hiển thị console)
+        print("✅ Đã lưu userprogress cho ${user.uid}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Lưu tiến độ thành công ✅")),
+        );
+      } catch (e) {
+        print("❌ Lỗi khi lưu userprogress: $e");
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi khi lưu tiến độ: $e")));
+      }
+    }
   }
 
   @override
