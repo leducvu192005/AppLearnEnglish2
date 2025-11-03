@@ -12,6 +12,11 @@ import 'package:flutter_application_1/admin/vocabulary_management.dart';
 import 'package:flutter_application_1/admin/reports.dart';
 import 'package:flutter_application_1/admin/setting.dart';
 import 'package:flutter_application_1/state/quiz_provider.dart';
+import 'package:flutter_application_1/state/vocabulary_page.dart';
+import 'package:flutter_application_1/state/skills/listening_screen.dart';
+import 'package:flutter_application_1/state/skills/speaking_screen.dart';
+import 'package:flutter_application_1/state/skills/reading_screen.dart';
+import 'package:flutter_application_1/state/skills/writing_screen.dart';
 
 class AppRoute {
   static final Map<String, WidgetBuilder> routes = {
@@ -28,5 +33,10 @@ class AppRoute {
     'reports': (context) => const Reports(),
     '/settings': (context) => const Setting(),
     '/quiz': (context) => const QuizProvider(),
+    '/vocabulary': (context) => const VocabularyPage(),
+    '/skills/listening': (context) => const ListeningScreen(),
+    '/skills/speaking': (context) => const SpeakingScreen(),
+    '/skills/reading': (context) => const ReadingScreen(),
+    '/skills/writing': (context) => const WritingScreen(),
   };
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'writing_detail_screen.dart';
 
 class WritingScreen extends StatelessWidget {
   const WritingScreen({super.key});
@@ -27,41 +28,29 @@ class WritingScreen extends StatelessWidget {
               final topic = topics[index];
               final data = topic.data() as Map<String, dynamic>;
 
-              return ExpansionTile(
-                leading: Image.network(
-                  data['image'],
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ListTile(
+                  leading: data['image'] != null
+                      ? Image.network(
+                          data['image'],
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        )
+                      : const SizedBox(width: 50, height: 50),
+                  title: Text(data['name'] ?? ''),
+                  subtitle: Text(data['description'] ?? ''),
+                  trailing: const Icon(Icons.arrow_forward),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WritingDetailScreen(topicId: topic.id),
+                      ),
+                    );
+                  },
                 ),
-                title: Text(data['name']),
-                subtitle: Text(data['description']),
-                children: [
-                  StreamBuilder<QuerySnapshot>(
-                    stream: topic.reference.collection('prompts').snapshots(),
-                    builder: (context, promptSnap) {
-                      if (!promptSnap.hasData)
-                        return const CircularProgressIndicator();
-                      final prompts = promptSnap.data!.docs;
-
-                      return Column(
-                        children: prompts.map((promptDoc) {
-                          final prompt =
-                              promptDoc.data() as Map<String, dynamic>;
-                          return ListTile(
-                            title: Text(prompt['question']),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: (prompt['tips'] as List)
-                                  .map<Widget>((tip) => Text("• $tip"))
-                                  .toList(),
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-                ],
               );
             },
           );

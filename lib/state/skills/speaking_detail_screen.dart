@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
+import 'package:audioplayers/audioplayers.dart';
 
 class SpeakingDetailScreen extends StatefulWidget {
   final String topicId;
@@ -16,14 +17,17 @@ class SpeakingDetailScreen extends StatefulWidget {
 }
 
 class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
-  final Record _recorder = Record(); // ✅ đúng kiểu cho version 4.4.4
+  final Record _recorder = Record();
   bool _isRecording = false;
   String? _recordPath;
   bool _isSubmitting = false;
   Map<String, dynamic>? _result;
 
-  // 🎙️ Bắt đầu ghi âm
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
   Future<void> _startRecording() async {
+    if (_isSubmitting) return;
+
     bool hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -31,6 +35,8 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
       );
       return;
     }
+
+    if (await _recorder.isRecording()) return;
 
     final dir = await getApplicationDocumentsDirectory();
     final path =
@@ -49,7 +55,6 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
     });
   }
 
-  // ⏹ Dừng ghi âm
   Future<void> _stopRecording() async {
     final path = await _recorder.stop();
 
@@ -65,7 +70,7 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
     }
   }
 
-  // 📤 Gửi file tới backend để AI chấm điểm
+  // 🔥 Hàm submitRecording mới: gửi audio + topicId + question
   Future<void> _submitRecording() async {
     if (_recordPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,21 +83,42 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
 
     try {
       final uri = Uri.parse("http://10.0.2.2:8000/evaluate-speaking/");
-
       final request = http.MultipartRequest("POST", uri);
+
+      // gửi audio
       request.files.add(
         await http.MultipartFile.fromPath('audio', _recordPath!),
       );
 
-      final response = await request.send();
+      // gửi topicId
+      request.fields['topicId'] = widget.topicId;
+
+      // lấy câu hỏi đầu tiên trong Firestore và gửi
+      final topicRef = FirebaseFirestore.instance
+          .collection('skills')
+          .doc('speaking')
+          .collection('topics')
+          .doc(widget.topicId);
+
+      final promptsSnapshot = await topicRef
+          .collection('prompts')
+          .limit(1)
+          .get();
+      if (promptsSnapshot.docs.isNotEmpty) {
+        final firstPrompt =
+            promptsSnapshot.docs.first.data() as Map<String, dynamic>;
+        request.fields['question'] = firstPrompt['question'] ?? '';
+      }
+
+      // gửi request
+      final response = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
       final respStr = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(respStr);
-        setState(() {
-          _result = jsonData;
-        });
-
+        setState(() => _result = jsonData);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("✅ Đã chấm điểm thành công!")),
         );
@@ -107,6 +133,22 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
       ).showSnackBar(SnackBar(content: Text("⚠️ Lỗi kết nối server: $e")));
     } finally {
       setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _playRecording() async {
+    if (_recordPath == null) return;
+
+    if (_isPlaying) {
+      await _audioPlayer.stop();
+      setState(() => _isPlaying = false);
+    } else {
+      await _audioPlayer.play(DeviceFileSource(_recordPath!));
+      setState(() => _isPlaying = true);
+
+      _audioPlayer.onPlayerComplete.listen((event) {
+        setState(() => _isPlaying = false);
+      });
     }
   }
 
@@ -141,44 +183,41 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
 
           return Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 🖼 Ảnh chủ đề
-                Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      data['image'] ?? '',
-                      height: 180,
-                      fit: BoxFit.cover,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        data['image'] ?? '',
+                        height: 180,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  data['name'] ?? '',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 16),
+                  Text(
+                    data['name'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  data['description'] ?? '',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 20),
-                const Divider(),
-                const Text(
-                  "Các câu hỏi gợi ý:",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-
-                // 🗣 Danh sách câu hỏi
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
+                  const SizedBox(height: 12),
+                  Text(
+                    data['description'] ?? '',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const Text(
+                    "Các câu hỏi gợi ý:",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  StreamBuilder<QuerySnapshot>(
                     stream: topicRef.collection('prompts').snapshots(),
                     builder: (context, promptSnap) {
                       if (!promptSnap.hasData) {
@@ -191,10 +230,13 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
                         return const Text("Chưa có câu hỏi nào.");
                       }
 
-                      return ListView(
-                        children: prompts.map((promptDoc) {
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: prompts.length,
+                        itemBuilder: (context, index) {
                           final prompt =
-                              promptDoc.data() as Map<String, dynamic>;
+                              prompts[index].data() as Map<String, dynamic>;
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 6),
                             child: ListTile(
@@ -209,60 +251,82 @@ class _SpeakingDetailScreenState extends State<SpeakingDetailScreen> {
                               ),
                             ),
                           );
-                        }).toList(),
+                        },
                       );
                     },
                   ),
-                ),
-
-                const SizedBox(height: 12),
-                Center(
-                  child: Column(
-                    children: [
-                      ElevatedButton.icon(
-                        icon: Icon(_isRecording ? Icons.stop : Icons.mic),
-                        label: Text(
-                          _isRecording ? "Dừng ghi âm" : "Bắt đầu nói",
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isRecording
-                              ? Colors.red
-                              : Colors.green,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 30,
-                            vertical: 14,
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Column(
+                      children: [
+                        ElevatedButton.icon(
+                          icon: Icon(_isRecording ? Icons.stop : Icons.mic),
+                          label: Text(
+                            _isRecording ? "Dừng ghi âm" : "Bắt đầu nói",
                           ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isRecording
+                                ? Colors.red
+                                : Colors.green,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 14,
+                            ),
+                          ),
+                          onPressed: _isSubmitting
+                              ? null
+                              : (_isRecording
+                                    ? _stopRecording
+                                    : _startRecording),
                         ),
-                        onPressed: _isRecording
-                            ? _stopRecording
-                            : _startRecording,
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.send),
-                        label: _isSubmitting
-                            ? const Text("Đang gửi...")
-                            : const Text("Nộp bài nói"),
-                        onPressed: _isSubmitting ? null : _submitRecording,
-                      ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          icon: Icon(
+                            _isPlaying ? Icons.stop : Icons.play_arrow,
+                          ),
+                          label: Text(_isPlaying ? "Dừng nghe" : "Nghe lại"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 14,
+                            ),
+                          ),
+                          onPressed: (_recordPath == null || _isSubmitting)
+                              ? null
+                              : _playRecording,
+                        ),
 
-                // 🎯 Hiển thị kết quả đánh giá
-                if (_result != null) ...[
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const Text(
-                    "🎯 Kết quả đánh giá:",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.send),
+                          label: _isSubmitting
+                              ? const Text("Đang gửi...")
+                              : const Text("Nộp bài nói"),
+                          onPressed: (_isSubmitting || _recordPath == null)
+                              ? null
+                              : _submitRecording,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text("🗣 Transcript: ${_result!['transcript'] ?? ''}"),
-                  const SizedBox(height: 6),
-                  Text("${_result!['evaluation'] ?? ''}"),
+                  if (_result != null) ...[
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    const Text(
+                      "🎯 Kết quả đánh giá:",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text("🗣 Transcript: ${_result!['transcript'] ?? ''}"),
+                    const SizedBox(height: 6),
+                    Text("${_result!['evaluation'] ?? ''}"),
+                  ],
                 ],
-              ],
+              ),
             ),
           );
         },
