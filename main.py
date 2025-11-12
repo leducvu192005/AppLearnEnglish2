@@ -7,7 +7,7 @@ import os
 app = FastAPI()
 
 # 🔑 Cấu hình API key Gemini
-genai.configure(api_key="AIzaSyCdmsMciZoyAPvV8qxXjHfFZ9Tl0RPIwZM")
+genai.configure(api_key="Thay bằng  API germini của bạn")
 
 # 🧠 Model Gemini
 model = genai.GenerativeModel("gemini-2.5-pro")
@@ -133,3 +133,4 @@ async def chat_with_ai(request: Request):
 
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
